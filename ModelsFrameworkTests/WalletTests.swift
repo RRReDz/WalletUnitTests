@@ -12,40 +12,72 @@ import XCTest
 class WalletTests: XCTestCase {
     var sut: Wallet!
     
-    enum WalletCardsSet {
-        case noCards
-        case threeCardsAllTypes
-        case threeCardsTwoSameIssuer
-        case allEqualsCards(number: Int, issuer: Card.Issuer)
-        case custom(cards: [Card])
-        
-        var cards: [Card] {
-            switch self {
-            case .noCards:
-                return []
-            case .threeCardsAllTypes:
-                return [
-                    Card(number: UUID().description, issuer: .visa),
-                    Card(number: UUID().description, issuer: .masterCard),
-                    Card(number: UUID().description, issuer: .americanExpress)
-                ]
-            case .threeCardsTwoSameIssuer:
-                return [
-                    Card(number: UUID().description, issuer: .visa),
-                    Card(number: UUID().description, issuer: .masterCard),
-                    Card(number: UUID().description, issuer: .masterCard)
-                ]
-            case .allEqualsCards(let numberOfCards, let issuer):
-                let cardNumber: String = UUID().description
-                let card: Card = Card(number: cardNumber, issuer: issuer)
-                return [Card].init(repeating: card, count: numberOfCards)
-            case .custom(let cards):
-                return cards
+    class FakeCardNumberGenerator {
+        func generate(for optIssuer: Card.Issuer?) -> String {
+            switch optIssuer {
+            case .some(let issuer):
+                switch issuer {
+                case .americanExpress:
+                    return "3400 0000 0000 009"
+                case .masterCard:
+                    return "5500 0000 0000 0004"
+                case .visa:
+                    return "4111 1111 1111 1111"
+                }
+            case .none:
+                return "1234 5678 9876 5432"
             }
         }
     }
     
-    private func feedSutWithStaticCardsSet(_ cardsSet: WalletCardsSet = .threeCardsAllTypes) -> [Card] {
+    enum WalletCardsSet {
+        case noCards
+        case allDifferent
+        case twoDifferent
+        case threeAllDifferent
+        case threeWithTwoSameIssuer
+        case allEquals(number: Int, issuer: Card.Issuer)
+        
+        var cards: [Card] {
+            let fakeCardNumberGenerator = FakeCardNumberGenerator()
+            switch self {
+            case .noCards:
+                return []
+            case .twoDifferent:
+                return [
+                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
+                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard)
+                ]
+            case .threeAllDifferent:
+                return [
+                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
+                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard),
+                    Card(number: fakeCardNumberGenerator.generate(for: .americanExpress), issuer: .americanExpress)
+                ]
+            case .allDifferent:
+                return [
+                    Card(number: "1", issuer: .visa),
+                    Card(number: "2", issuer: .masterCard),
+                    Card(number: "3", issuer: .masterCard),
+                    Card(number: "4", issuer: .americanExpress),
+                    Card(number: "5", issuer: .masterCard),
+                    Card(number: "6", issuer: .visa)
+                ]
+            case .threeWithTwoSameIssuer:
+                return [
+                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
+                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard),
+                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard)
+                ]
+            case .allEquals(let numberOfCards, let issuer):
+                let cardNumber: String = fakeCardNumberGenerator.generate(for: issuer)
+                let card: Card = Card(number: cardNumber, issuer: issuer)
+                return [Card].init(repeating: card, count: numberOfCards)
+            }
+        }
+    }
+    
+    private func feedSutWithStaticCardsSet(_ cardsSet: WalletCardsSet = .threeAllDifferent) -> [Card] {
         let cards: [Card] = cardsSet.cards
         sut.add(cards)
         return cards
@@ -54,6 +86,17 @@ class WalletTests: XCTestCase {
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
         self.sut = Wallet()
+    }
+    
+    func test_creatingWalletWithThreeCards_startingWithNoCards_shouldHaveTheThreeAddedCards() {
+        //Given
+        let cards: [Card] = WalletCardsSet.threeWithTwoSameIssuer.cards
+        
+        //When
+        let sut = Wallet(cards: cards)
+        
+        //Then
+        XCTAssertEqual(sut.cards, cards)
     }
     
     // Stub (Dependency injection with a simple native data structure (array of cards))
@@ -79,7 +122,7 @@ class WalletTests: XCTestCase {
         //Given
         let sut: Wallet = Wallet()
         /* This is the simplest example of stub */
-        let cards: [Card] = WalletCardsSet.threeCardsAllTypes.cards
+        let cards: [Card] = WalletCardsSet.threeAllDifferent.cards
         
         //When
         sut.add(cards)
@@ -123,7 +166,7 @@ class WalletTests: XCTestCase {
         let sut: Wallet = Wallet(
             cardsProvider: cardsProviderStub
         )
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -152,12 +195,12 @@ class WalletTests: XCTestCase {
         }
         
         /* Passing data to stub that is going to give to wallet later */
-        let cards: [Card] = WalletCardsSet.threeCardsAllTypes.cards
+        let cards: [Card] = WalletCardsSet.threeAllDifferent.cards
         let cardsProviderStub: CardsProviderStub = CardsProviderStub(cards: cards)
         let sut: Wallet = Wallet(
             cardsProvider: cardsProviderStub
         )
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -184,10 +227,10 @@ class WalletTests: XCTestCase {
                 completion(cards)
             }
         }
-        let cards: [Card] = WalletCardsSet.allEqualsCards(number: 2, issuer: .visa).cards
+        let cards: [Card] = WalletCardsSet.allEquals(number: 2, issuer: .visa).cards
         let cardsProviderStub: CardsProviderStub = CardsProviderStub(cards: cards)
         sut.set(cardsProviderStub)
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -217,7 +260,7 @@ class WalletTests: XCTestCase {
         let sut: Wallet = Wallet(
             cardsProvider: cardsProviderMock
         )
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -310,7 +353,7 @@ class WalletTests: XCTestCase {
     
     func test_addingOneCard_withFiveCards_shouldHaveSixCards_Rule3_Example1_Bad_2() {
         //Given
-        WalletTests.sharedSut.add(WalletCardsSet.allEqualsCards(number: 5, issuer: .visa).cards)
+        WalletTests.sharedSut.add(WalletCardsSet.allEquals(number: 5, issuer: .visa).cards)
         let cardsToAdd: [Card] = [
             Card(number: "4111 1111 1111 1111", issuer: .visa)
         ]
@@ -350,7 +393,7 @@ class WalletTests: XCTestCase {
     
     func test_addingOneCard_withUndefinedCards_shouldHaveOneOrMoreCards_Rule4_Good() {
         //Given
-        let undefinedPreloadedCards: [Card] = WalletCardsSet.allEqualsCards(number: 4, issuer: .visa).cards
+        let undefinedPreloadedCards: [Card] = WalletCardsSet.allEquals(number: 4, issuer: .visa).cards
         let sut: Wallet = Wallet(cards: undefinedPreloadedCards)
         let cardsToAdd: [Card] = [
             Card(number: "4111 1111 1111 1111", issuer: .visa)
@@ -399,9 +442,9 @@ class WalletTests: XCTestCase {
     func test_loadingOneVisaCardThroughProvider_withThreeAmexCards_shouldNotHaveMasterCardCards_Rule5_Bad() {
         //Given
         let cardsProvider: VisaCardProvider = VisaCardProvider() // <- Error! Real production object dependency, can't have control over the output, probably is going to invalidate "Fast" and "Repeatable" properties of FIRST paradigm. Should be used a test double instead.
-        let sut: Wallet = Wallet(cards: WalletCardsSet.allEqualsCards(number: 3, issuer: .americanExpress).cards)
+        let sut: Wallet = Wallet(cards: WalletCardsSet.allEquals(number: 3, issuer: .americanExpress).cards)
         sut.set(cardsProvider)
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -419,13 +462,13 @@ class WalletTests: XCTestCase {
         //Given
         class VisaCardProviderStub: CardsProvider {
             func getCards(completion: @escaping ([Card]) -> Void) {
-                completion(WalletCardsSet.allEqualsCards(number: 1, issuer: .visa).cards)
+                completion(WalletCardsSet.allEquals(number: 1, issuer: .visa).cards)
             }
         }
         let cardsProvider = VisaCardProviderStub()
-        let sut = Wallet(cards: WalletCardsSet.allEqualsCards(number: 3, issuer: .americanExpress).cards)
+        let sut = Wallet(cards: WalletCardsSet.allEquals(number: 3, issuer: .americanExpress).cards)
         sut.set(cardsProvider)
-        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Cards are now loaded")
+        let loadingExpectation: XCTestExpectation = XCTestExpectation(description: "Expect to load cards")
         
         //When
         sut.loadCards {
@@ -437,6 +480,129 @@ class WalletTests: XCTestCase {
         //Then
         XCTAssertTrue(!sut.cards.contains{ $0.issuer == .masterCard }, "Wallet contains a masterCard card!")
     }
+    
+    /* MARK: Rule 6
+     * Make your test failure messages clear.
+     */
+    
+    //Bad
+    func test_removingOneExistingCard_startingWithDifferentCards_shouldNotHaveTheCardToRemove_Rule6_Bad() {
+        //Given
+        let preloadedCards: [Card] = WalletCardsSet.allDifferent.cards
+        let cardToRemove: Card = preloadedCards.last!
+        let sut = Wallet(cards: preloadedCards)
+        
+        //When
+        sut.remove(cardToRemove)
+        
+        //Then
+        XCTAssertTrue(!sut.cards.contains(cardToRemove))
+    }
+    
+    //Good
+    func test_removingOneExistingCard_startingWithDifferentCards_shouldNotHaveTheCardToRemove_Rule6_Good() {
+        //Given
+        let preloadedCards: [Card] = WalletCardsSet.allDifferent.cards
+        let cardToRemove: Card = preloadedCards.last!
+        let sut = Wallet(cards: preloadedCards)
+        
+        //When
+        sut.remove(cardToRemove)
+        
+        //Then
+        XCTAssertTrue(!sut.cards.contains(cardToRemove), "The wallet still contains the card that should have been removed!")
+    }
+    
+    /* MARK: Rule 7
+     * Make use of assertions only to test what is asked to test.
+     */
+    
+    //Bad (following the naming)
+    func test_removingFirstAddedCard_startingWithTwoDifferentCards_shouldHaveOneCard_Rule7_Bad() {
+        //Given
+        let preloadedCards: [Card] = WalletCardsSet.twoDifferent.cards
+        let cardToRemove: Card = preloadedCards.first!
+        let sut = Wallet(cards: preloadedCards)
+        
+        //When
+        sut.remove(cardToRemove)
+        
+        //Then
+        //Problem here! This assertion is syntatically correct but not necessary here since the expected final state/behavior is only that the wallet should have one card, so is not conform to what asked from the test. These would have been correct if the the final state was something like "shouldHavePreloadedCardsMinusTheFirstCard" or "correctlyRemovedOnlyTheFirstCard"
+        let resultingCards: [Card] = [Card](preloadedCards.dropFirst())
+        XCTAssertEqual(sut.cards, resultingCards, "The wallet is not made by the preloaded cards minus the first card")
+        // or... XCTAssertTrue(!sut.cards.contains(cardToRemove), "The wallet still contains the card that should have been removed")
+    }
+    
+    //Good (following the naming)
+    func test_removingFirstAddedCard_startingWithTwoDifferentCards_shouldHaveOneCard_Rule7_Good() {
+        //Given
+        let preloadedCards: [Card] = WalletCardsSet.twoDifferent.cards
+        let cardToRemove: Card = preloadedCards.first!
+        let sut = Wallet(cards: preloadedCards)
+        
+        //When
+        sut.remove(cardToRemove)
+        
+        //Then
+        XCTAssertEqual(sut.cards.count, 1)
+    }
+    
+    /* MARK: Rule 8
+     * Avoid use of variables defined at test class level without creating/destroying them in “setUp”/”tearDown” methods.
+     */
+    
+    //Bad
+    
+    /*
+        Here should be visible something like:
+        private var sut: Wallet = Wallet()
+    */
+    
+    func test_addingOneCard_startingWithNoCards_shouldHaveOneCard_Rule8_Bad() {
+        //Given
+        let cards: [Card] = [
+            Card(number: "5500 0000 0000 0004", issuer: .masterCard)
+        ]
+        
+        //When
+        sut.add(cards)
+        
+        //Then
+        XCTAssertEqual(sut.cards.count, 1)
+    }
+    
+    //Good
+    
+    /*
+        Here should be visible something like:
+        private var sut: Wallet!
+        
+        override func setUp() {
+            // Put setup code here. This method is called before the invocation of each test method in the class.
+            self.sut = Wallet()
+        }
+     */
+    
+    func test_addingOneCard_stringWithNoCards_shouldHaveOneCard_Rule8_Good() {
+        //Given
+        let cards: [Card] = [
+            Card(number: "5500 0000 0000 0004", issuer: .masterCard)
+        ]
+        
+        //When
+        sut.add(cards)
+        
+        //Then
+        XCTAssertEqual(sut.cards.count, 1)
+    }
+    
+    /*
+         override func tearDown() {
+             // Put teardown code here. This method is called after the invocation of each test method in the class.
+             self.sut = nil
+         }
+     */
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.

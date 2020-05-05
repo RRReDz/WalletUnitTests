@@ -9,7 +9,6 @@
 import Foundation
 
 public struct Card: Equatable {
-    let id: UUID = UUID()
     let number: String
     let issuer: Issuer
     

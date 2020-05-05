@@ -28,6 +28,16 @@ public class Wallet {
     }
     
     @discardableResult
+    public func remove(_ card: Card) -> Bool {
+        if let indexToRemove = self.cards.firstIndex(of: card) {
+            self.cards.remove(at: indexToRemove)
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    @discardableResult
     public func set(_ cardsProvider: CardsProvider) -> Self {
         self.cardsProvider = cardsProvider
         return self
