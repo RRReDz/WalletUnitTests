@@ -28,6 +28,11 @@ public class Wallet {
     }
     
     @discardableResult
+    public func add(_ card: Card) -> Self {
+        return self.add([card])
+    }
+    
+    @discardableResult
     public func remove(_ card: Card) -> Bool {
         if let indexToRemove = self.cards.firstIndex(of: card) {
             self.cards.remove(at: indexToRemove)

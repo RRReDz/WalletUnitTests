@@ -13,6 +13,8 @@
 		0648669C245B25F400D51869 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0648669B245B25F400D51869 /* Card.swift */; };
 		0648669E245B25FD00D51869 /* Wallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0648669D245B25FD00D51869 /* Wallet.swift */; };
 		064866A2245B2FB000D51869 /* CardsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064866A1245B2FB000D51869 /* CardsProvider.swift */; };
+		06C1BE4E2461DBD900ED0CA1 /* FakeCardNumberGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C1BE4D2461DBD900ED0CA1 /* FakeCardNumberGenerator.swift */; };
+		06C1BE502461DC0F00ED0CA1 /* WalletCardsSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C1BE4F2461DC0F00ED0CA1 /* WalletCardsSet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +37,8 @@
 		0648669B245B25F400D51869 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		0648669D245B25FD00D51869 /* Wallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wallet.swift; sourceTree = "<group>"; };
 		064866A1245B2FB000D51869 /* CardsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardsProvider.swift; sourceTree = "<group>"; };
+		06C1BE4D2461DBD900ED0CA1 /* FakeCardNumberGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCardNumberGenerator.swift; sourceTree = "<group>"; };
+		06C1BE4F2461DC0F00ED0CA1 /* WalletCardsSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCardsSet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +84,8 @@
 				0648669B245B25F400D51869 /* Card.swift */,
 				064866A1245B2FB000D51869 /* CardsProvider.swift */,
 				0648669D245B25FD00D51869 /* Wallet.swift */,
+				06C1BE4F2461DC0F00ED0CA1 /* WalletCardsSet.swift */,
+				06C1BE4D2461DBD900ED0CA1 /* FakeCardNumberGenerator.swift */,
 				0648667F245B258B00D51869 /* ModelsFramework.h */,
 				06486680245B258B00D51869 /* Info.plist */,
 			);
@@ -207,8 +213,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				0648669E245B25FD00D51869 /* Wallet.swift in Sources */,
+				06C1BE4E2461DBD900ED0CA1 /* FakeCardNumberGenerator.swift in Sources */,
 				0648669C245B25F400D51869 /* Card.swift in Sources */,
 				064866A2245B2FB000D51869 /* CardsProvider.swift in Sources */,
+				06C1BE502461DC0F00ED0CA1 /* WalletCardsSet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

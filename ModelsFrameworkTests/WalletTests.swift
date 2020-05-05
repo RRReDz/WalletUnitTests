@@ -12,71 +12,6 @@ import XCTest
 class WalletTests: XCTestCase {
     var sut: Wallet!
     
-    class FakeCardNumberGenerator {
-        func generate(for optIssuer: Card.Issuer?) -> String {
-            switch optIssuer {
-            case .some(let issuer):
-                switch issuer {
-                case .americanExpress:
-                    return "3400 0000 0000 009"
-                case .masterCard:
-                    return "5500 0000 0000 0004"
-                case .visa:
-                    return "4111 1111 1111 1111"
-                }
-            case .none:
-                return "1234 5678 9876 5432"
-            }
-        }
-    }
-    
-    enum WalletCardsSet {
-        case noCards
-        case allDifferent
-        case twoDifferent
-        case threeAllDifferent
-        case threeWithTwoSameIssuer
-        case allEquals(number: Int, issuer: Card.Issuer)
-        
-        var cards: [Card] {
-            let fakeCardNumberGenerator = FakeCardNumberGenerator()
-            switch self {
-            case .noCards:
-                return []
-            case .twoDifferent:
-                return [
-                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
-                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard)
-                ]
-            case .threeAllDifferent:
-                return [
-                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
-                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard),
-                    Card(number: fakeCardNumberGenerator.generate(for: .americanExpress), issuer: .americanExpress)
-                ]
-            case .allDifferent:
-                return [
-                    Card(number: "1", issuer: .visa),
-                    Card(number: "2", issuer: .masterCard),
-                    Card(number: "3", issuer: .masterCard),
-                    Card(number: "4", issuer: .americanExpress),
-                    Card(number: "5", issuer: .masterCard),
-                    Card(number: "6", issuer: .visa)
-                ]
-            case .threeWithTwoSameIssuer:
-                return [
-                    Card(number: fakeCardNumberGenerator.generate(for: .visa), issuer: .visa),
-                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard),
-                    Card(number: fakeCardNumberGenerator.generate(for: .masterCard), issuer: .masterCard)
-                ]
-            case .allEquals(let numberOfCards, let issuer):
-                let cardNumber: String = fakeCardNumberGenerator.generate(for: issuer)
-                let card: Card = Card(number: cardNumber, issuer: issuer)
-                return [Card].init(repeating: card, count: numberOfCards)
-            }
-        }
-    }
-    
     private func feedSutWithStaticCardsSet(_ cardsSet: WalletCardsSet = .threeAllDifferent) -> [Card] {
         let cards: [Card] = cardsSet.cards
         sut.add(cards)
@@ -90,7 +25,7 @@ class WalletTests: XCTestCase {
     
     func test_creatingWalletWithThreeCards_startingWithNoCards_shouldHaveTheThreeAddedCards() {
         //Given
-        let cards: [Card] = WalletCardsSet.threeWithTwoSameIssuer.cards
+        let cards: [Card] = WalletCardsSet.threeWithTwoEquals.cards
         
         //When
         let sut = Wallet(cards: cards)
@@ -423,6 +358,7 @@ class WalletTests: XCTestCase {
         
         func getCards(completion: @escaping ([Card]) -> Void) {
             
+            /* Put this here because URLSession call won't answer without a valid url */
             completion([])
             return
             
@@ -603,6 +539,71 @@ class WalletTests: XCTestCase {
              self.sut = nil
          }
      */
+    
+    /* MARK: Rule 9
+     * Don’t repeat yourself/duplicate code
+     */
+    
+    //Bad
+    func test_addingOneCardVisa1234_startingWithNoCards_visa1234ShouldBeCorrectlyAddedAsLastCard_Rule9_Bad1() {
+        //Given
+        let cardVisa1234ToAdd = Card(number: "1234", issuer: .visa)
+        let sut = Wallet()
+        
+        //When
+        sut.add(cardVisa1234ToAdd)
+        
+        //Then
+        XCTAssertNotNil(sut.cards.last, "The card has not been added to the wallet")
+        XCTAssertEqual(sut.cards.last?.number, "1234")
+        XCTAssertEqual(sut.cards.last?.issuer, .visa)
+    }
+    
+    func test_addingOneCardAmex5678_startingWithNoCards_amex5678ShouldBeCorrectlyAddedAsLastCard_Rule9_Bad2() {
+        //Given
+        let cardAmex5678ToAdd = Card(number: "5678", issuer: .americanExpress)
+        let sut = Wallet()
+        
+        //When
+        sut.add(cardAmex5678ToAdd)
+        
+        //Then
+        XCTAssertNotNil(sut.cards.last, "The card has not been added to the wallet")
+        XCTAssertEqual(sut.cards.last?.number, "5678")
+        XCTAssertEqual(sut.cards.last?.issuer, .americanExpress)
+    }
+    
+    //Good
+    static func assertLastCard(of wallet: Wallet, is card: Card, file: StaticString = #file, line: UInt = #line) {
+        XCTAssertNotNil(wallet.cards.last, "The card has not been added to the wallet", file: file, line: line)
+        XCTAssertEqual(wallet.cards.last?.number, card.number, "card number", file: file, line: line)
+        XCTAssertEqual(wallet.cards.last?.issuer, card.issuer, "card issuer", file: file, line: line)
+    }
+    
+    func test_addingOneCardVisa1234_startingWithNoCards_visa1234ShouldBeCorrectlyAddedAsLastCard_Rule9_Good1() {
+        //Given
+        let cardVisa1234ToAdd = Card(number: "1234", issuer: .visa)
+        let sut = Wallet()
+        
+        //When
+        sut.add(cardVisa1234ToAdd)
+        
+        //Then
+        WalletTests.assertLastCard(of: sut, is: cardVisa1234ToAdd)
+    }
+    
+    func test_addingOneCardAmex5678_startingWithNoCards_amex5678ShouldBeCorrectlyAddedAsLastCard_Rule9_Good2() {
+        //Given
+        let cardAmex5678ToAdd = Card(number: "5678", issuer: .americanExpress)
+        let sut = Wallet()
+        
+        //When
+        sut.add(cardAmex5678ToAdd)
+        
+        //Then
+        WalletTests.assertLastCard(of: sut, is: cardAmex5678ToAdd)
+    }
+    
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
