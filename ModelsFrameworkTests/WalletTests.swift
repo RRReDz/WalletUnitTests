@@ -180,18 +180,18 @@ class WalletTests: XCTestCase {
     }
     
     //Mock (Dependency injection with object that is conform to a protocol that is asked from the sut)
-    func test_loadingCards_alreadyAskedForCardsYTimes_cardsHaveBeenAskedYPlusOneTimes() {
+    func test_loadingCards_alreadyAskedCardsYTimes_cardsAskedYPlusOneTimes() {
         //Given
         class CardsProviderMock: CardsProvider {
-            var timesCardsHaveBeenAsked = 0
+            var timesAskedCards = 0
             
             func getCards(completion: ([Card]) -> Void) {
-                timesCardsHaveBeenAsked += 1
+                timesAskedCards += 1
                 completion([])
             }
         }
         let cardsProviderMock: CardsProviderMock = CardsProviderMock()
-        let timesCardsHaveBeenAskedBeforeTest = cardsProviderMock.timesCardsHaveBeenAsked
+        let timesAskedCardsBeforeTest = cardsProviderMock.timesAskedCards
         let sut: Wallet = Wallet(
             cardsProvider: cardsProviderMock
         )
@@ -205,7 +205,10 @@ class WalletTests: XCTestCase {
         wait(for: [loadingExpectation], timeout: 5.0)
         
         //Then
-        XCTAssertEqual(cardsProviderMock.timesCardsHaveBeenAsked, timesCardsHaveBeenAskedBeforeTest + 1)
+        XCTAssertEqual(
+            cardsProviderMock.timesAskedCards,
+            timesAskedCardsBeforeTest + 1
+        )
     }
     
     /* MARK: Good Unit Test Rules */
@@ -244,7 +247,7 @@ class WalletTests: XCTestCase {
     
     //Bad
     func test_addingOneCard_withNoCards_shouldHaveOneCard_Rule2_Bad() {
-        XCTAssertEqual(Wallet().add([Card(number: "4111 1111 1111 1111", issuer: .visa)]).cards.count, 1)
+        XCTAssertEqual(Wallet().add(Card(number: "4111 1111 1111 1111", issuer: .visa)).cards.count, 1)
     }
     
     //Good
@@ -285,10 +288,9 @@ class WalletTests: XCTestCase {
         //Then
         XCTAssertEqual(WalletTests.sharedSut.cards.count, 2, "cards")
     }
-    
-    func test_addingOneCard_withFiveCards_shouldHaveSixCards_Rule3_Example1_Bad_2() {
+
+    func test_addingOneCard_withNoCards_shouldHaveOneCard_Rule3_Example1_Bad_2() {
         //Given
-        WalletTests.sharedSut.add(WalletCardsSet.allEquals(number: 5, issuer: .visa).cards)
         let cardsToAdd: [Card] = [
             Card(number: "4111 1111 1111 1111", issuer: .visa)
         ]
@@ -297,7 +299,37 @@ class WalletTests: XCTestCase {
         WalletTests.sharedSut.add(cardsToAdd)
         
         //Then
-        XCTAssertEqual(WalletTests.sharedSut.cards.count, 6, "cards")
+        XCTAssertEqual(WalletTests.sharedSut.cards.count, 1, "cards")
+    }
+    
+    //Good
+    func test_addingTwoCards_withNoCards_shouldHaveTwoCards_Rule3_Example1_Good_1() {
+        //Given
+        let sut = Wallet()
+        let cards: [Card] = [
+            Card(number: "4111 1111 1111 1111", issuer: .visa),
+            Card(number: "5500 0000 0000 0004", issuer: .masterCard)
+        ]
+        
+        //When
+        sut.add(cards)
+        
+        //Then
+        XCTAssertEqual(sut.cards.count, 2, "cards")
+    }
+
+    func test_addingOneCard_withNoCards_shouldHaveOneCard_Rule3_Example1_Good_2() {
+        //Given
+        let sut = Wallet()
+        let cardsToAdd: [Card] = [
+            Card(number: "4111 1111 1111 1111", issuer: .visa)
+        ]
+        
+        //When
+        sut.add(cardsToAdd)
+        
+        //Then
+        XCTAssertEqual(sut.cards.count, 1, "cards")
     }
     
     /* MARK: Rule 4
@@ -325,10 +357,12 @@ class WalletTests: XCTestCase {
             XCTFail("Wallet doesn't contain cards")
         }
     }
-    
+
+    //Good
     func test_addingOneCard_withUndefinedCards_shouldHaveOneOrMoreCards_Rule4_Good() {
         //Given
-        let undefinedPreloadedCards: [Card] = WalletCardsSet.allEquals(number: 4, issuer: .visa).cards
+        //Just an enum that, after being configurated properly, is going to return cards
+        let undefinedPreloadedCards: [Card] = WalletCardsSet.allDifferent.cards
         let sut: Wallet = Wallet(cards: undefinedPreloadedCards)
         let cardsToAdd: [Card] = [
             Card(number: "4111 1111 1111 1111", issuer: .visa)
@@ -392,7 +426,7 @@ class WalletTests: XCTestCase {
         //Then
         XCTAssertTrue(!sut.cards.contains{ $0.issuer == .masterCard }, "Wallet contains a masterCard card!")
     }
-    
+
     //Good
     func test_loadingOneVisaCardThroughProvider_withThreeAmexCards_shouldNotHaveMasterCardCards_Rule5_Good() {
         //Given
@@ -434,7 +468,7 @@ class WalletTests: XCTestCase {
         //Then
         XCTAssertTrue(!sut.cards.contains(cardToRemove))
     }
-    
+
     //Good
     func test_removingOneExistingCard_startingWithDifferentCards_shouldNotHaveTheCardToRemove_Rule6_Good() {
         //Given
@@ -469,7 +503,7 @@ class WalletTests: XCTestCase {
         XCTAssertEqual(sut.cards, resultingCards, "The wallet is not made by the preloaded cards minus the first card")
         // or... XCTAssertTrue(!sut.cards.contains(cardToRemove), "The wallet still contains the card that should have been removed")
     }
-    
+
     //Good (following the naming)
     func test_removingFirstAddedCard_startingWithTwoDifferentCards_shouldHaveOneCard_Rule7_Good() {
         //Given
@@ -492,7 +526,7 @@ class WalletTests: XCTestCase {
     
     /*
         Here should be visible something like:
-        private var sut: Wallet = Wallet()
+        private var sut: Wallet = Wallet() //Error! XCTestCase class doesn't deallocate once test run ends.
     */
     
     func test_addingOneCard_startingWithNoCards_shouldHaveOneCard_Rule8_Bad() {
@@ -558,7 +592,7 @@ class WalletTests: XCTestCase {
         XCTAssertEqual(sut.cards.last?.number, "1234")
         XCTAssertEqual(sut.cards.last?.issuer, .visa)
     }
-    
+
     func test_addingOneCardAmex5678_startingWithNoCards_amex5678ShouldBeCorrectlyAddedAsLastCard_Rule9_Bad2() {
         //Given
         let cardAmex5678ToAdd = Card(number: "5678", issuer: .americanExpress)
@@ -574,12 +608,34 @@ class WalletTests: XCTestCase {
     }
     
     //Good
-    static func assertLastCard(of wallet: Wallet, is card: Card, file: StaticString = #file, line: UInt = #line) {
-        XCTAssertNotNil(wallet.cards.last, "The card has not been added to the wallet", file: file, line: line)
-        XCTAssertEqual(wallet.cards.last?.number, card.number, "card number", file: file, line: line)
-        XCTAssertEqual(wallet.cards.last?.issuer, card.issuer, "card issuer", file: file, line: line)
+    static func assertLastCard(
+        of wallet: Wallet,
+        is card: Card,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        XCTAssertNotNil(
+            wallet.cards.last,
+            "The card has not been added to the wallet",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(
+            wallet.cards.last?.number,
+            card.number,
+            "card number",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(
+            wallet.cards.last?.issuer,
+            card.issuer,
+            "card issuer",
+            file: file,
+            line: line
+        )
     }
-    
+
     func test_addingOneCardVisa1234_startingWithNoCards_visa1234ShouldBeCorrectlyAddedAsLastCard_Rule9_Good1() {
         //Given
         let cardVisa1234ToAdd = Card(number: "1234", issuer: .visa)
@@ -591,7 +647,7 @@ class WalletTests: XCTestCase {
         //Then
         WalletTests.assertLastCard(of: sut, is: cardVisa1234ToAdd)
     }
-    
+
     func test_addingOneCardAmex5678_startingWithNoCards_amex5678ShouldBeCorrectlyAddedAsLastCard_Rule9_Good2() {
         //Given
         let cardAmex5678ToAdd = Card(number: "5678", issuer: .americanExpress)
