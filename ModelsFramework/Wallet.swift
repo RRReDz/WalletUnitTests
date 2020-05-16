@@ -59,3 +59,47 @@ public class Wallet {
         }
     }
 }
+
+//Bad
+public class WalletWrong {
+    private var cardsProvider: CardsProvider
+    
+    init() {
+        /* Error! MasterCardCardsProvider is a dependency and it's not injected */
+        cardsProvider = MasterCardCardsProvider()
+    }
+    
+    func getCardsFromNewProvider(completion: @escaping ([Card]) -> Void) {
+        /* Error! MasterCardCardsProvider is a dependency and it's not injected */
+        cardsProvider = MasterCardCardsProvider()
+        cardsProvider.getCards {
+            completion($0)
+        }
+    }
+}
+
+//Good
+public class WalletGood {
+    private var cardsProvider: CardsProvider
+    
+    init(cardsProvider: CardsProvider) {
+        self.cardsProvider = cardsProvider
+    }
+    
+    func getCardsFromNewProvider(cardsProvider: CardsProvider, completion: @escaping ([Card]) -> Void) {
+        self.cardsProvider = cardsProvider
+        cardsProvider.getCards {
+            completion($0)
+        }
+    }
+}
+
+public class WalletDependencyImpl {
+    private var cardsProvider: CardsProviderImpl
+    
+    init(cardsProvider: CardsProviderImpl) {
+        self.cardsProvider = cardsProvider
+    }
+}
+
+
